@@ -15,6 +15,7 @@ struct RootView: View {
     @StateObject private var pomodoroModel = PomodoroTimerModel()
     
     @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @Query var rootDataRecords: [RootData]
     @Query var plans: [Plan]
     @Query var settings: [AppSettings]
@@ -64,10 +65,11 @@ struct RootView: View {
                 ContentUnavailableView("Select a section", systemImage: "sidebar.left", description: Text("Choose a view from the sidebar"))
             }
         }
-        .onAppear {
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             createTodayTasksIfNeeded()
             scheduleReviewNotificationIfNeeded()
         }
+
     }
 
     // MARK: - Create Today's Tasks
