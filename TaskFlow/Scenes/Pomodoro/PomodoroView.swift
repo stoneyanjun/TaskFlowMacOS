@@ -7,8 +7,12 @@ struct PomodoroView: View {
     @EnvironmentObject var pomodoroModel: PomodoroTimerModel
     @Query var tasks: [Task]
     @Query var settings: [AppSettings]
+    @State private var showEndConfirmation = false
 
     @State private var showTaskSelector = false
+    private var canEnd: Bool {
+        pomodoroModel.isRunning || pomodoroModel.isPaused || pomodoroModel.isRelaxing
+    }
 
     private var formattedTime: String {
         let minutes = pomodoroModel.timeRemaining / 60
@@ -75,10 +79,13 @@ struct PomodoroView: View {
                     Button("Pause") { pomodoroModel.pause() }
                         .buttonStyle(MediumLargeButtonStyle())
                 }
-
+                
                 Button("End") {
-                    pomodoroModel.end(abandoned: true)
+                    if canEnd {
+                        showEndConfirmation = true
+                    }
                 }
+                .disabled(!canEnd)
                 .buttonStyle(MediumLargeButtonStyle())
             }
             .font(.title2)
@@ -107,6 +114,14 @@ struct PomodoroView: View {
         }
         .alert("Relax Finished!", isPresented: $pomodoroModel.showRelaxPrompt) {
             Button("OK") { pomodoroModel.reset() }
+        }
+        .alert("End Pomodoro?", isPresented: $showEndConfirmation) {
+            Button("Yes", role: .destructive) {
+                pomodoroModel.end(abandoned: true)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to stop this Pomodoro session?")
         }
     }
 }

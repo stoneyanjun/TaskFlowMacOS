@@ -3,6 +3,8 @@ import SwiftData
 
 struct TaskDetailView: View {
     @Bindable var task: Task
+    @Environment(\.modelContext) private var context
+    @State private var showDeleteConfirmation = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -34,13 +36,28 @@ struct TaskDetailView: View {
                     Text("No plan linked")
                 }
             }
-            HStack {
+            HStack(spacing: 20) {
                 Spacer()
+                
+                Button("Delete") {
+                    showDeleteConfirmation = true
+                }
+                .foregroundColor(.red)
+
                 Button("Close") {
                     dismiss()
                 }
             }
             .padding()
+        }
+        .alert("Delete Task?", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                context.delete(task)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone.")
         }
         .padding()
         .navigationTitle("Task Detail")

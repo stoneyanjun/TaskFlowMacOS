@@ -3,7 +3,14 @@ import SwiftUI
 import SwiftData
 
 struct PlanListView: View {
-    @Query(sort: [SortDescriptor(\Plan.startTime)]) var plans: [Plan]
+    @Query(
+        filter: #Predicate<Plan> { plan in
+            plan.isDelete == false
+        },
+        sort: [SortDescriptor(\Plan.startTime)]
+    )
+    var plans: [Plan]
+    
     @Environment(\.modelContext) private var context
 
     @State private var showingNewPlanSheet = false

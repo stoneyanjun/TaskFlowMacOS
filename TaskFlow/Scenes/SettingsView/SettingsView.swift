@@ -4,7 +4,7 @@ import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
-    @Environment(\.scenePhase)   private var scenePhase
+    @Environment(\.scenePhase) private var scenePhase
     @Query var settings: [AppSettings]
 
     @State private var workMinutes: Int = 25
@@ -14,7 +14,6 @@ struct SettingsView: View {
         bySettingHour: 18, minute: 15, second: 0, of: Date()
     )!
 
-    // ───────── UI ─────────
     var body: some View {
         Form {
             Section("Pomodoro") {
@@ -33,14 +32,18 @@ struct SettingsView: View {
         .padding()
         .navigationTitle("Settings")
         .onAppear { loadSettings() }
-        .onDisappear { saveSettings() }
+        // auto-save whenever any field changes
+        .onChange(of: workMinutes) { _, _ in saveSettings() }
+        .onChange(of: relaxMinutes) { _, _ in saveSettings() }
+        .onChange(of: enableReview) { _, _ in saveSettings() }
+        .onChange(of: reviewTime) { _, _ in saveSettings() }
+        // still save on background
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background { saveSettings() }
         }
-        Spacer()
     }
 
-    // ───────── Persistence ─────────
+    // MARK: - Persistence
     private func loadSettings() {
         guard let current = settings.first else { return }
         workMinutes  = current.pomodoroWorkMinutes
@@ -50,23 +53,24 @@ struct SettingsView: View {
     }
 
     private func saveSettings() {
-        if let existing = settings.first {
-            existing.pomodoroWorkMinutes    = workMinutes
-            existing.pomodoroRelaxMinutes   = relaxMinutes
-            existing.enableReviewNotification = enableReview
-            existing.reviewNotificationTime = reviewTime
-        } else {
-            context.insert(
-                AppSettings(
-                    pomodoroWorkMinutes:  workMinutes,
-                    pomodoroRelaxMinutes: relaxMinutes,
-                    enableReviewNotification: enableReview,
-                    reviewNotificationTime:  reviewTime
-                )
+        let current = settings.first ?? {
+            let new = AppSettings(
+                pomodoroWorkMinutes: workMinutes,
+                pomodoroRelaxMinutes: relaxMinutes,
+                enableReviewNotification: enableReview,
+                reviewNotificationTime: reviewTime
             )
-        }
+            context.insert(new)
+            return new
+        }()
+        current.pomodoroWorkMinutes = workMinutes
+        current.pomodoroRelaxMinutes = relaxMinutes
+        current.enableReviewNotification = enableReview
+        current.reviewNotificationTime = reviewTime
+        try? context.save() // ensure immediate persistence
     }
 }
+
 
 struct SettingsView_Previews: PreviewProvider {
     struct PreviewWrapper: View {

@@ -50,3 +50,9 @@ class Task: Identifiable {
         modifiedDate = .now
     }
 }
+
+extension Task {
+    var isValidPlan: Bool {
+        plan?.isDelete == false || plan == nil
+    }
+}

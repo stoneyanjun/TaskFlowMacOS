@@ -5,6 +5,8 @@ import SwiftUI
 struct NewTaskView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query var plans: [Plan]
+    @State private var selectedPlan: Plan?
 
     @State private var name = ""
     @State private var priority: PlanPriority = .normal
@@ -20,6 +22,13 @@ struct NewTaskView: View {
             Form {
                 TextField("Task Name", text: $name)
 
+                Picker("Plan", selection: $selectedPlan) {
+                    Text("No Plan").tag(nil as Plan?)
+                    ForEach(plans) { plan in
+                        Text(plan.name).tag(plan as Plan?)
+                    }
+                }
+                
                 Picker("Priority", selection: $priority) {
                     ForEach(PlanPriority.allCases) { level in
                         Text(level.displayName).tag(level)
@@ -51,7 +60,8 @@ struct NewTaskView: View {
                         priority: priority,
                         isUrgent: isUrgent,
                         location: location.isEmpty ? nil : location,
-                        notificationTime: enableNotification ? notificationTimeValue : nil
+                        notificationTime: enableNotification ? notificationTimeValue : nil,
+                        plan: selectedPlan
                     )
                     context.insert(newTask)
                     dismiss()

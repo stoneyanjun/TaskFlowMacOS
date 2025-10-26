@@ -9,6 +9,7 @@ class Plan: Identifiable {
     var status: PlanStatus
     var priority: PlanPriority? = PlanPriority.normal
     var isUrgent: Bool = false
+    var isDelete: Bool = false
     var subPlanID: UUID?
     var createdDate = Date()
     var modifiedDate = Date()

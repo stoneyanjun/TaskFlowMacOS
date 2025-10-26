@@ -3,9 +3,25 @@ import SwiftUI
 import SwiftData
 
 struct PlanDetailView: View {
+
+    @State private var showDeleteConfirmation = false
+    
     @Bindable var plan: Plan
     @Binding var startTime: Date
     @Binding var endTime: Date
+    
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @Query private var allTasks: [Task]
+    
+    private var tasksForThisPlan: [Task] {
+        allTasks.filter { $0.plan == plan }
+    }
+    private var hasTaskForToday: Bool {
+        tasksForThisPlan.contains {
+            Calendar.current.isDateInToday($0.date)
+        }
+    }
 
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -45,7 +61,7 @@ struct PlanDetailView: View {
             }
 
             Section(header: Text("Actions")) {
-                HStack(spacing: 10) {
+                HStack(spacing: 16) {
                     Button("Finish") {
                         plan.status = .finished
                         plan.endTime = Date()
@@ -53,6 +69,15 @@ struct PlanDetailView: View {
                     Button("Abandon") {
                         plan.status = .abandoned
                     }
+                    Button("🗑️ Delete Plan") {
+                        showDeleteConfirmation = true
+                    }
+                    .foregroundColor(.red)
+
+                    Button("➕ Add Today’s Task") {
+                        addTodayTaskIfNeeded()
+                    }
+                    .disabled(hasTaskForToday)
                 }
             }
         }
@@ -61,6 +86,17 @@ struct PlanDetailView: View {
         .alert(alertMessage, isPresented: $showAlert) {
             Button("OK", role: .cancel) {}
         }
+        .alert("Delete this plan?", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                plan.isDelete = true
+                plan.modifiedDate = Date()
+                try? context.save()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone.")
+        }
     }
 
     private func validateDates(start: Date, end: Date) {
@@ -68,6 +104,19 @@ struct PlanDetailView: View {
             alertMessage = "End date cannot be earlier than start date."
             showAlert = true
         }
+    }
+    
+    private func addTodayTaskIfNeeded() {
+        guard !hasTaskForToday else { return }
+
+        let task = Task(
+            name: plan.name + " Task",
+            date: Calendar.current.startOfDay(for: Date()),
+            priority: plan.priority ?? .normal,
+            isUrgent: plan.isUrgent,
+            plan: plan
+        )
+        context.insert(task)
     }
 }
 
